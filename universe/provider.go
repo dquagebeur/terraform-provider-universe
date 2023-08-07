@@ -3,12 +3,14 @@ package universe
 import (
 	"context"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 const (
@@ -24,15 +26,16 @@ const (
 // but if debugging or testing the binary name is junk e.g. 'debug.test'
 // so provide a default.
 func getProviderNameFromBinaryOrEnvironment() (name string) {
-	const TFP string = "terraform-provider-"
-
 	name, ok := os.LookupEnv(EnvProviderNameVar)
 	if ok {
 		return // env var overrides binary name
 	}
 	binaryName := filepath.Base(os.Args[0])
-	if strings.HasPrefix(binaryName, TFP) {
-		name = strings.TrimPrefix(binaryName, TFP)
+	re := regexp.MustCompile(`^terraform-provider-(?:([^\d]+))(?:-(\d+(?:\.\d+(?:\.\d+)?)?))?(?:-pre\d*)?$`)
+	s := re.FindStringSubmatch(binaryName)
+	if len(s) >= 2 {
+		// binary name matches pattern
+		name = s[1]
 		return
 	}
 	name = DefaultProviderName
