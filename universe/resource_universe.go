@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 )
 
 func resourceCustom() *schema.Resource {
@@ -46,6 +47,15 @@ func resourceCustom() *schema.Resource {
 				Required:         true,
 				ValidateFunc:     validation.StringIsJSON,
 				DiffSuppressFunc: diffSuppressComputed,
+			},
+
+			"config_sensitive": {
+				Description:      "The information (in JSON format) managed by Terraform plan and apply, but for sensitive datas.",
+				Type:             schema.TypeString,
+				Optional:         true,
+				ValidateFunc:     validation.StringIsJSON,
+				DiffSuppressFunc: diffSuppressComputed,
+				Sensitive:        true,
 			},
 
 			"id_key": {
@@ -214,15 +224,26 @@ func callExecutor(event string, d ResourceLike, providerConfig interface{}) (boo
 		delete(responseMap, idKey)
 
 		// Now set the payload in the resource data 'config' field
-		payloadBytes, err := json.Marshal(responseMap)
+		payloadConfigBytes, err := json.Marshal(responseMap["config"])
 		if err != nil {
 			return false, err
 		}
-		err = d.Set("config", string(payloadBytes))
+		err = d.Set("config", string(payloadConfigBytes))
 		if err != nil {
 			return false, err
 		}
-		log.Printf("Executed: setting data to: %s", string(payloadBytes))
+
+		_, ok = d.GetOk("config_sensitive")
+		if ok {
+			payloadConfigSensitiveBytes, err := json.Marshal(responseMap["config_sensitive"])
+			if err != nil {
+				return false, err
+			}
+			err = d.Set("config_sensitive", string(payloadConfigSensitiveBytes))
+			if err != nil {
+				return false, err
+			}
+		}
 	}
 
 	return false, err
@@ -332,6 +353,26 @@ func getConfigFromTF(d ResourceLike) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("expected JSON in 'config' but got: %#v", js)
 	}
-	configData, err := json.Marshal(attributes)
+
+	all_attributes := map[string]interface{}{}
+	all_attributes["config"] = attributes
+
+	// get config_sensitive field if exist
+	dr, ok = d.GetOk("config_sensitive")
+	if ok && dr != nil {
+		js, ok := dr.(string)
+		if !ok {
+			return nil, fmt.Errorf("expected string in 'config_sensitive', but got: %#v", dr)
+		}
+		db := []byte(js)
+		attributes_sensitive := map[string]interface{}{}
+		err := json.Unmarshal(db, &attributes_sensitive)
+		if err != nil {
+			return nil, fmt.Errorf("expected JSON in 'config_sensitive' but got: %#v", js)
+		}
+		all_attributes["config_sensitive"] = attributes_sensitive
+	}
+
+	configData, err := json.Marshal(all_attributes)
 	return configData, err
 }
