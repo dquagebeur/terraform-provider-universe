@@ -1,4 +1,4 @@
-module github.com/aellwein/terraform-provider-universe
+module github.com/dquagebeur/terraform-provider-universe
 
 go 1.20
 
