@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/aellwein/terraform-provider-universe/universe"
+	"github.com/dquagebeur/terraform-provider-universe/universe"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 )

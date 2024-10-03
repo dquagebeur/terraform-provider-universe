@@ -175,12 +175,8 @@ func callExecutor(event string, d ResourceLike, providerConfig interface{}) (boo
 
 	cmd := exec.Command(effectiveDefaults["executor"].(string), scriptPath, event)
 	cmd.Env = makeEnvironment(id, effectiveDefaults)
+	cmd.Stdin = bytes.NewReader(configData)
 
-	if event == "delete" {
-		cmd.Stdin = bytes.NewReader([]byte{})
-	} else {
-		cmd.Stdin = bytes.NewReader(configData)
-	}
 	// Call the executor
 	rawResponse, err := cmd.Output()
 	if err != nil {
