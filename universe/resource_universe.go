@@ -167,8 +167,7 @@ func callExecutor(event string, d ResourceLike, providerConfig interface{}) (boo
 	}
 	log.Printf("Executing: %s", string(configData))
 
-	pwd, _ := os.Getwd()
-	scriptPath, err := filepath.Abs(pwd + "/" + effectiveDefaults["script"].(string))
+	scriptPath, err := filepath.Abs(effectiveDefaults["script"].(string))
 	if err != nil {
 		return false, err
 	}
