@@ -334,23 +334,26 @@ func extractEssentialFields(event string, d ResourceLike, providerConfig interfa
 
 // getConfigFromTF - Validate and extract the 'config' JSON field from the resourceData, returning []byte
 func getConfigFromTF(d ResourceLike) ([]byte, error) {
-	dr, ok := d.GetOk("config")
-	if !ok || dr == nil {
-		return nil, fmt.Errorf("missing 'config'")
-	}
-	js, ok := dr.(string)
-	if !ok {
-		return nil, fmt.Errorf("expected string in 'config', but got: %#v", dr)
-	}
-	db := []byte(js)
-	attributes := map[string]interface{}{}
-	err := json.Unmarshal(db, &attributes)
-	if err != nil {
-		return nil, fmt.Errorf("expected JSON in 'config' but got: %#v", js)
-	}
-
 	all_attributes := map[string]interface{}{}
-	all_attributes["config"] = attributes
+
+	// get config field if exist (not required in case of read event)
+	dr, ok := d.GetOk("config")
+	if ok && dr != nil {
+		js, ok := dr.(string)
+		if !ok {
+			return nil, fmt.Errorf("expected string in 'config', but got: %#v", dr)
+		}
+		db := []byte(js)
+		attributes := map[string]interface{}{}
+		err := json.Unmarshal(db, &attributes)
+		if err != nil {
+			return nil, fmt.Errorf("expected JSON in 'config' but got: %#v", js)
+		}
+
+		all_attributes["config"] = attributes
+	} else {
+		all_attributes["config"] = map[string]interface{}{}
+	}
 
 	// get config_sensitive field if exist
 	dr, ok = d.GetOk("config_sensitive")
