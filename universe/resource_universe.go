@@ -58,6 +58,13 @@ func resourceCustom() *schema.Resource {
 				Sensitive:        true,
 			},
 
+			"computed": {
+				Description: "The information (in JSON format) managed by Terraform plan and apply, computed by provider.",
+				Type:        schema.TypeString,
+				Computed:    true,
+				Optional:    true,
+			},
+
 			"id_key": {
 				Description:  "The name of the key which holds the unique identifier of the resource. e.g. 'id'",
 				Type:         schema.TypeString,
@@ -235,6 +242,18 @@ func callExecutor(event string, d ResourceLike, providerConfig interface{}) (boo
 				return false, err
 			}
 			err = d.Set("config_sensitive", string(payloadConfigSensitiveBytes))
+			if err != nil {
+				return false, err
+			}
+		}
+
+		_, ok = responseMap["computed"]
+		if ok {
+			payloadConfigComputed, err := json.Marshal(responseMap["computed"])
+			if err != nil {
+				return false, err
+			}
+			err = d.Set("computed", string(payloadConfigComputed))
 			if err != nil {
 				return false, err
 			}
