@@ -77,7 +77,11 @@ func resourceCustom() *schema.Resource {
 
 // diffSuppressComputed - Only different if the non @ fields have changed.
 // remove the @ fields from the two JSON strings and then compare them.
-func diffSuppressComputed(_, old, new string, _ *schema.ResourceData) bool {
+func diffSuppressComputed(k, old, new string, _ *schema.ResourceData) bool {
+
+	if k == "config" && (new == "0" || new == "" || new == "74D93920-ED26-11E3-AC10-0800200C9A66") && old != new {
+		return false
+	}
 
 	removeComputed := func(jsonish string) string {
 		var x interface{}
@@ -105,7 +109,7 @@ func diffSuppressComputed(_, old, new string, _ *schema.ResourceData) bool {
 	oldJSON := removeComputed(old)
 
 	result := newJSON == oldJSON
-	log.Printf("diffSuppressComputed() %#v for %#v  %#v \n", result, old, new)
+	log.Printf("diffSuppressComputed(%v) %#v for %#v  %#v \n", k, result, old, new)
 	return result
 }
 
